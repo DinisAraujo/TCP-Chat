@@ -3,7 +3,7 @@ import socket, threading
 #HOST = input("Type server IP: ")
 HOST = "192.168.1.101"
 nickname = input("Choose a nickname: ")
-PORT = 1112
+PORT = 1314
 admin = False
 client = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 client.connect((HOST,PORT))
