@@ -1,7 +1,7 @@
 import threading, socket
 
 HOST = socket.gethostbyname(socket.gethostname())
-PORT = 3232
+PORT = 1112
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((HOST, PORT))
@@ -65,15 +65,16 @@ def change_nickname(old_nickname, nickname):
     broadcast(message)
 
 def promote_user(nickname):
-    new_admin = clients[nicknames.index(nickname)]
-    if new_admin not in admins:
-        admins.append(new_admin)
-        new_admin.send("ADMIN".encode("utf-8"))
-        print(f"{nickname} has been promoted!")
-    elif new_admin not in clients:
+    try:
+        new_admin = clients[nicknames.index(nickname)]
+        if new_admin not in admins:
+            admins.append(new_admin)
+            new_admin.send("ADMIN".encode("utf-8"))
+            print(f"{nickname} has been promoted!")
+        else:
+            print(f"{nickname} is already an admin!")
+    except ValueError:
         print(f"{nickname} is not an active client in the chat!")
-    else:
-        print(f"{nickname} is already an admin!")
 
 def receive():
     while True:
@@ -94,12 +95,7 @@ def write():
         message = input("")
         if message.split(" ")[0] == "/admin":
             nickname = message.split(" ")[1]
-            new_admin = clients[nicknames.index(nickname)]
-            if new_admin not in admins:
-                admins.append(new_admin)
-                new_admin.send("ADMIN".encode("utf-8"))
-            else:
-                print(f"{nickname} is already an admin!")
+            promote_user(nickname)
         else:
             print("n")
 
