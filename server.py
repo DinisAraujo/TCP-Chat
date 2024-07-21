@@ -1,7 +1,7 @@
 import threading, socket
 
 HOST = socket.gethostbyname(socket.gethostname())
-PORT = 44311
+PORT = 4431
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((HOST, PORT))
@@ -26,14 +26,21 @@ def close_connection(client):
     broadcast(message)
 
 def kick_user(kicker, nickname):
-    client_to_kick = clients[nicknames.index(nickname)]
-    if client_to_kick in clients:
-        message = f"{nickname} has been kicked by {kicker}!"
-        print(message)
-        broadcast(message)
-        close_connection(client_to_kick)
-    else:
-        print(f"{nickname} isn't the nickname of an active user!")
+    try:
+        client_to_kick = clients[nicknames.index(nickname)]
+        if kicker != "SERVER" and client_to_kick in admins:
+            clients[nicknames.index(kicker)].send("You can't kick/ban a fellow Admin!".encode("utf-8"))
+        else:
+            if client_to_kick in clients:
+                message = f"{nickname} has been kicked by {kicker}!"
+                print(message)
+                broadcast(message)
+                close_connection(client_to_kick)
+            else:
+                print(f"{nickname} isn't the nickname of an active user!")
+    except ValueError:
+        clients[nicknames.index(kicker)].send(f"{nickname} isn't the nickname of an active user!".encode("utf-8"))
+
 
 def send_secret(sender, receiver_nickname, message):
     secret = " ".join(message.split()[3:])
