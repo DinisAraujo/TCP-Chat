@@ -1,7 +1,7 @@
 import threading, socket
 
 HOST = socket.gethostbyname(socket.gethostname())
-PORT = 4431
+PORT = 44313
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((HOST, PORT))
@@ -132,8 +132,8 @@ def write():
         except IndexError:
             print("Invalid arguments!")
 
-
 print("Server is open and listening...")
+print(f"Your IP is {HOST} and all users willing to connect must enter it")
 thread_write = threading.Thread(target=write)
 thread_write.start()
 receive()

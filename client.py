@@ -1,9 +1,9 @@
 import socket, threading
 
-#HOST = input("Type server IP: ")
-HOST = "192.168.1.101"
+HOST = input("Type server IP: ")
+#HOST = "192.168.1.101"
 nickname = input("Choose a nickname: ")
-PORT = 4431
+PORT = 44313
 admin = False
 changed_nick_as_admin = False
 client = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
