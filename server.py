@@ -1,7 +1,7 @@
 import threading, socket
 
 HOST = socket.gethostbyname(socket.gethostname())
-PORT = 1314
+PORT = 13441
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((HOST, PORT))
@@ -85,6 +85,7 @@ def promote_user(nickname):
         new_admin = clients[nicknames.index(nickname)]
         if new_admin not in admins:
             admins.append(new_admin)
+            nicknames[nicknames.index(nickname)] = nickname+"[ADMIN]"
             new_admin.send("ADMIN".encode("utf-8"))
             print(f"{nickname} has been promoted!")
         else:
@@ -109,12 +110,18 @@ def receive():
 def write():
     while True:
         message = input("")
-        nickname = message.split(" ")[1]
-        if message.split(" ")[0] == "/admin":
-            nickname = message.split(" ")[1]
-            promote_user(nickname)
-        elif message.split(" ")[0] == "/kick":
-            kick_user("SERVER",nickname)
+        try:
+            if message.startswith("/"):
+                nickname = message.split(" ")[1]
+                if message.split(" ")[0] == "/admin":
+                    nickname = message.split(" ")[1]
+                    promote_user(nickname)
+                elif message.split(" ")[0] == "/kick":
+                    kick_user("SERVER",nickname)
+                else:
+                    print("Invalid command!")
+        except IndexError:
+            print("Invalid arguments!")
 
 
 print("Server is open and listening...")
