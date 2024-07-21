@@ -1,6 +1,12 @@
 import threading, socket, time, csv
 
 def read_file(file_path):
+    """
+    Reads a CSV file with two columns and returns a dictionary where the first column is the key and the second column is the value.
+
+    :param file_path: Path to the CSV file
+    :return: Dictionary with the first column as keys and the second column as values
+    """
     data_dict = {}
     try:
         with open(file_path, 'r', newline='') as csvfile:
@@ -19,22 +25,42 @@ def read_file(file_path):
         print(f"An error occurred: {e}")
         return {}
 
+# Get the local machine name and IP address
 HOST = socket.gethostbyname(socket.gethostname())
 PORT = 44332
+
+# Create a socket object
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+# Bind the socket to the host and port
 server.bind((HOST, PORT))
+
+# Enable the server to accept connections
 server.listen()
 
+# Lists to keep track of clients, nicknames, and admins
 clients = []
 nicknames = []
 admins = []
+
+# Read banned IPs from file
 banned_ips = read_file("lists/bans.txt")
 
 def broadcast(message):
+    """
+    Send a message to all connected clients.
+
+    :param message: The message to send
+    """
     for client in clients:
         client.send(message.encode("utf-8"))
 
 def close_connection(client):
+    """
+    Close a client's connection and remove them from the chat.
+
+    :param client: The client socket
+    """
     index = clients.index(client)
     clients.remove(client)
     client.close()
@@ -45,6 +71,12 @@ def close_connection(client):
     broadcast(message)
 
 def kick_user(kicker, nickname):
+    """
+    Kick a user from the chat.
+
+    :param kicker: The nickname of the user initiating the kick
+    :param nickname: The nickname of the user to be kicked
+    """
     try:
         client_to_kick = clients[nicknames.index(nickname)]
         if kicker != "SERVER" and client_to_kick in admins:
@@ -65,6 +97,13 @@ def kick_user(kicker, nickname):
             print(message)
 
 def send_secret(sender, receiver_nickname, message):
+    """
+    Send a private message to a specific user.
+
+    :param sender: The client socket of the sender
+    :param receiver_nickname: The nickname of the recipient
+    :param message: The message to send
+    """
     secret = " ".join(message.split()[3:])
     try:
         clients[nicknames.index(receiver_nickname)].send(f"{nicknames[clients.index(sender)]} whispers to you: {secret}".encode("utf-8"))
@@ -73,6 +112,11 @@ def send_secret(sender, receiver_nickname, message):
         sender.send(f"{receiver_nickname} isn't the nickname of an active user!".encode("utf-8"))
 
 def handle(client):
+    """
+    Handle messages from a specific client.
+
+    :param client: The client socket
+    """
     while True:
         try:
             message = client.recv(1024).decode("utf-8")
@@ -99,12 +143,14 @@ def handle(client):
                 continue
         except OSError:
             continue
-        #except:
-          #  print(f"An error occured with {nickname} - Connection terminated.")
-           # close_connection(client)
-            #break
 
 def change_nickname(old_nickname, nickname):
+    """
+    Change a user's nickname.
+
+    :param old_nickname: The old nickname
+    :param nickname: The new nickname
+    """
     print(nicknames)
     message = f"{old_nickname} changed nickname to {nickname}"
     nicknames[nicknames.index(old_nickname)] = nickname
@@ -112,6 +158,12 @@ def change_nickname(old_nickname, nickname):
     broadcast(message)
 
 def ban_user(banner, banned):
+    """
+    Ban a user from the chat.
+
+    :param banner: The nickname of the user initiating the ban
+    :param banned: The nickname of the user to be banned
+    """
     banned_user = clients[nicknames.index(banned)]
     banned_ip = banned_user.getsockname()[0]
     with open("lists/bans.txt", "a") as bans_list:
@@ -125,6 +177,11 @@ def ban_user(banner, banned):
     close_connection(clients[nicknames.index(banned)])
 
 def promote_user(nickname):
+    """
+    Promote a user to an admin.
+
+    :param nickname: The nickname of the user to be promoted
+    """
     try:
         new_admin = clients[nicknames.index(nickname)]
         if new_admin not in admins:
@@ -138,6 +195,9 @@ def promote_user(nickname):
         print(f"{nickname} isn't the nickname of an active user!")
 
 def receive():
+    """
+    Accept and handle new client connections.
+    """
     while True:
         client, address = server.accept()
         banned = False
@@ -162,6 +222,9 @@ def receive():
             thread_handle.start()
 
 def write():
+    """
+    Handle server-side commands from the administrator.
+    """
     while True:
         message = input("")
         try:
@@ -180,9 +243,11 @@ def write():
         except IndexError:
             print("Invalid arguments!")
 
+# Print server status and start the write thread
 print("Server is open and listening...")
-print(banned_ips)
 print(f"Your IP is {HOST} and all users willing to connect must enter it")
 thread_write = threading.Thread(target=write)
 thread_write.start()
+
+# Start accepting client connections
 receive()
