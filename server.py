@@ -1,8 +1,26 @@
-import threading, socket
+import threading, socket, time, csv
+
+def read_file(file_path):
+    data_dict = {}
+    try:
+        with open(file_path, 'r', newline='') as csvfile:
+            reader = csv.reader(csvfile)
+            for row in reader:
+                if len(row) != 2:
+                    print(f"Skipping row with unexpected number of columns: {row}")
+                    continue
+                key, value = row
+                data_dict[key] = value
+        return data_dict
+    except FileNotFoundError:
+        print(f"The file {file_path} does not exist.")
+        return {}
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return {}
 
 HOST = socket.gethostbyname(socket.gethostname())
-PORT = 44313
-
+PORT = 44332
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((HOST, PORT))
 server.listen()
@@ -10,6 +28,7 @@ server.listen()
 clients = []
 nicknames = []
 admins = []
+banned_ips = read_file("lists/bans.txt")
 
 def broadcast(message):
     for client in clients:
@@ -39,8 +58,11 @@ def kick_user(kicker, nickname):
             else:
                 print(f"{nickname} isn't the nickname of an active user!")
     except ValueError:
-        clients[nicknames.index(kicker)].send(f"{nickname} isn't the nickname of an active user!".encode("utf-8"))
-
+        message = f"{nickname} isn't the nickname of an active user!"
+        if kicker != "SERVER":
+            clients[nicknames.index(kicker)].send(message.encode("utf-8"))
+        else:
+            print(message)
 
 def send_secret(sender, receiver_nickname, message):
     secret = " ".join(message.split()[3:])
@@ -89,6 +111,19 @@ def change_nickname(old_nickname, nickname):
     print(message)
     broadcast(message)
 
+def ban_user(banner, banned):
+    banned_user = clients[nicknames.index(banned)]
+    banned_ip = banned_user.getsockname()[0]
+    with open("lists/bans.txt", "a") as bans_list:
+        bans_list.write(banned+","+banned_ip+"\n")
+        bans_list.close()
+    banned_ips[banned] = banned_ip
+    message = f"{banned} has been banned by {banner}"
+    print(message)
+    print(banned_ips)
+    broadcast(message)
+    close_connection(clients[nicknames.index(banned)])
+
 def promote_user(nickname):
     try:
         new_admin = clients[nicknames.index(nickname)]
@@ -105,16 +140,26 @@ def promote_user(nickname):
 def receive():
     while True:
         client, address = server.accept()
-        print(f"{address[0]} connected!")
-        client.send("NICK".encode("utf-8"))
-        nickname = client.recv(1024).decode("utf-8")
-        clients.append(client)
-        nicknames.append(nickname)
-        print(f"Nickname of the client with the address {address[0]} is '{nickname}'!")
-        broadcast(f"{nickname} joined the chat!")
-        client.send("You are now connected to the server!".encode("utf-8"))
-        thread_handle = threading.Thread(target=handle, args=(client,))
-        thread_handle.start()
+        banned = False
+        for name in banned_ips:
+            if banned_ips[name] == address[0]:
+                banned = True
+        if banned:
+            print(f"Banned address {address[0]} tried to join!")
+            client.send("You have been banned and can't join!".encode("utf-8"))
+            time.sleep(1)
+            client.close()
+        else:
+            print(f"{address[0]} connected!")
+            client.send("NICK".encode("utf-8"))
+            nickname = client.recv(1024).decode("utf-8")
+            clients.append(client)
+            nicknames.append(nickname)
+            print(f"Nickname of the client with the address {address[0]} is '{nickname}'!")
+            broadcast(f"{nickname} joined the chat!")
+            client.send("You are now connected to the server!".encode("utf-8"))
+            thread_handle = threading.Thread(target=handle, args=(client,))
+            thread_handle.start()
 
 def write():
     while True:
@@ -127,12 +172,16 @@ def write():
                 elif message.split(" ")[0] == "/kick":
                     nickname = message.split(" ")[1]
                     kick_user("SERVER",nickname)
+                elif message.split(" ")[0] == "/ban":
+                    nickname = message.split(" ")[1]
+                    ban_user("SERVER",nickname)
                 else:
                     print("Invalid command!")
         except IndexError:
             print("Invalid arguments!")
 
 print("Server is open and listening...")
+print(banned_ips)
 print(f"Your IP is {HOST} and all users willing to connect must enter it")
 thread_write = threading.Thread(target=write)
 thread_write.start()
