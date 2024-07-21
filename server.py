@@ -1,7 +1,7 @@
 import threading, socket
 
 HOST = socket.gethostbyname(socket.gethostname())
-PORT = 13441
+PORT = 44311
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((HOST, PORT))
@@ -47,6 +47,7 @@ def handle(client):
     while True:
         try:
             message = client.recv(1024).decode("utf-8")
+            print(message)
             nickname = message.split(" ")[0][:-1]
             try:
                 if message.split(" ")[1] == "/nick":
@@ -75,6 +76,7 @@ def handle(client):
             #break
 
 def change_nickname(old_nickname, nickname):
+    print(nicknames)
     message = f"{old_nickname} changed nickname to {nickname}"
     nicknames[nicknames.index(old_nickname)] = nickname
     print(message)
@@ -85,7 +87,7 @@ def promote_user(nickname):
         new_admin = clients[nicknames.index(nickname)]
         if new_admin not in admins:
             admins.append(new_admin)
-            nicknames[nicknames.index(nickname)] = nickname+"[ADMIN]"
+            nicknames[nicknames.index(nickname)] = nickname + "[ADMIN]"
             new_admin.send("ADMIN".encode("utf-8"))
             print(f"{nickname} has been promoted!")
         else:
@@ -112,11 +114,11 @@ def write():
         message = input("")
         try:
             if message.startswith("/"):
-                nickname = message.split(" ")[1]
                 if message.split(" ")[0] == "/admin":
                     nickname = message.split(" ")[1]
                     promote_user(nickname)
                 elif message.split(" ")[0] == "/kick":
+                    nickname = message.split(" ")[1]
                     kick_user("SERVER",nickname)
                 else:
                     print("Invalid command!")
