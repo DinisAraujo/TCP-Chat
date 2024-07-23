@@ -3,7 +3,7 @@ import socket, threading
 # Prompt the user to input the server's IP address and their nickname
 HOST = input("Type server IP: ")
 nickname = input("Choose a nickname: ")
-PORT = 44314
+PORT = 44311
 
 # Variables to track admin status and nickname changes
 admin = False

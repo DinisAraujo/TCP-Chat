@@ -27,7 +27,7 @@ def read_file(file_path):
 
 # Get the local machine name and IP address
 HOST = socket.gethostbyname(socket.gethostname())
-PORT = 44314
+PORT = 44311
 
 # Create a socket object
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -46,6 +46,8 @@ admins = []
 # Read banned IPs from file
 banned_ips = read_file("lists/bans.txt")
 print(banned_ips)
+
+
 def broadcast(message):
     """
     Send a message to all connected clients.
@@ -123,14 +125,15 @@ def handle(client):
             print(message)
             nickname = message.split(" ")[0][:-1]
             try:
+                command = message.split(" ")[1]
                 argument = message.split(" ")[2]
-                if message.split(" ")[1] == "/nick":
+                if command == "/nick":
                     change_nickname(nickname, argument)
-                elif message.split(" ")[1] == "/quit":
+                elif command == "/quit":
                     close_connection(client)
-                elif message.split(" ")[1] == "/secret":
+                elif command == "/secret":
                     send_secret(client, argument, message)
-                elif message.split(" ")[1] == "/kick":
+                elif command == "/kick":
                     if client in admins:
                         kick_user(nickname, argument)
                     else:
@@ -139,7 +142,9 @@ def handle(client):
                     if client in admins:
                         ban_user(nickname, argument)
                     else:
-                        client.send(f"You can't kick '{argument}' because you are not an admin!".encode("utf-8"))
+                        client.send(f"You can't ban '{argument}' because you are not an admin!".encode("utf-8"))
+                #elif message.split(" ")[1] == "list":
+                    #if argument == "users":
                 else:
                     broadcast(message)
             except IndexError:
@@ -237,6 +242,18 @@ def receive():
             thread_handle = threading.Thread(target=handle, args=(client,))
             thread_handle.start()
 
+
+def list_group(group):
+    list = ""
+    if type(group) is dict:
+        print(group)
+        for name in group:
+            list += name + " - " + group[name] + "\n"
+    else:
+        for element in group:
+            list += element + "\n"
+    return list
+
 def write():
     """
     Handle server-side commands from the administrator.
@@ -245,15 +262,21 @@ def write():
         message = input("")
         try:
             if message.startswith("/"):
-                nickname = message.split(" ")[1]
-            if message.split(" ")[0] == "/admin":
-                    promote_user(nickname)
-            elif message.split(" ")[0] == "/kick":
-                kick_user("SERVER",nickname)
-            elif message.split(" ")[0] == "/ban":
-                ban_user("SERVER",nickname)
-            elif message.split(" ")[0] == "/list":
-                ban_user("SERVER",nickname)
+                command = message.split(" ")[0]
+                argument = message.split(" ")[1]
+            if command == "/admin":
+                    promote_user(argument)
+            elif command == "/kick":
+                kick_user("SERVER",argument)
+            elif command == "/ban":
+                ban_user("SERVER",argument)
+            elif command == "/list":
+                if argument == "users":
+                    print(list_group(nicknames))
+                elif argument == "admins":
+                    print(list_group(admins))
+                elif argument == "banned":
+                    print(list_group(banned_ips))
             else:
                 print("Invalid command!")
         except IndexError or ValueError:
