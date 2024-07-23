@@ -10,7 +10,7 @@ Server commands:
 
 Admin commands:
 * **/kick** nickname - Kick a User
-* **/ban** nickname - Ban a User by IP (not implemented yet)
+* **/ban** nickname - Ban a User by IP
 * **/unban** nickname - Unban a User (not implemented yet)
 
 User commands:

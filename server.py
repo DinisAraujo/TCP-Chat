@@ -45,7 +45,7 @@ admins = []
 
 # Read banned IPs from file
 banned_ips = read_file("lists/bans.txt")
-
+print(banned_ips)
 def broadcast(message):
     """
     Send a message to all connected clients.
@@ -135,6 +135,12 @@ def handle(client):
                     nickname_to_kick = message.split(" ")[2]
                     if client in admins:
                         kick_user(nickname, nickname_to_kick)
+                    else:
+                        client.send(f"You can't kick '{nickname_to_kick}' because you are not an admin!".encode("utf-8"))
+                elif message.split(" ")[1] == "/ban":
+                    nickname_to_ban = message.split(" ")[2]
+                    if client in admins:
+                        ban_user(nickname, nickname_to_ban)
                     else:
                         client.send(f"You can't kick '{nickname_to_kick}' because you are not an admin!".encode("utf-8"))
                 else:

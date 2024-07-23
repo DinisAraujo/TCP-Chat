@@ -75,6 +75,11 @@ def write():
                 send = False
                 print("You're not an Admin and can't use this command.")
 
+        elif message.split(" ")[1] == "/ban":
+            if not admin:
+                send = False
+                print("You're not an Admin and can't use this command.")
+
         # Send the formatted message to the server
         if send:
             client.send(message.encode("utf-8"))
