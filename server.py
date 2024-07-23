@@ -27,7 +27,7 @@ def read_file(file_path):
 
 # Get the local machine name and IP address
 HOST = socket.gethostbyname(socket.gethostname())
-PORT = 44332
+PORT = 44314
 
 # Create a socket object
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -123,26 +123,23 @@ def handle(client):
             print(message)
             nickname = message.split(" ")[0][:-1]
             try:
+                argument = message.split(" ")[2]
                 if message.split(" ")[1] == "/nick":
-                    new_nickname = message.split(" ")[2]
-                    change_nickname(nickname, new_nickname)
+                    change_nickname(nickname, argument)
                 elif message.split(" ")[1] == "/quit":
                     close_connection(client)
                 elif message.split(" ")[1] == "/secret":
-                    receiver_nickname = message.split(" ")[2]
-                    send_secret(client, receiver_nickname, message)
+                    send_secret(client, argument, message)
                 elif message.split(" ")[1] == "/kick":
-                    nickname_to_kick = message.split(" ")[2]
                     if client in admins:
-                        kick_user(nickname, nickname_to_kick)
+                        kick_user(nickname, argument)
                     else:
-                        client.send(f"You can't kick '{nickname_to_kick}' because you are not an admin!".encode("utf-8"))
+                        client.send(f"You can't kick '{argument}' because you are not an admin!".encode("utf-8"))
                 elif message.split(" ")[1] == "/ban":
-                    nickname_to_ban = message.split(" ")[2]
                     if client in admins:
-                        ban_user(nickname, nickname_to_ban)
+                        ban_user(nickname, argument)
                     else:
-                        client.send(f"You can't kick '{nickname_to_kick}' because you are not an admin!".encode("utf-8"))
+                        client.send(f"You can't kick '{argument}' because you are not an admin!".encode("utf-8"))
                 else:
                     broadcast(message)
             except IndexError:
@@ -170,17 +167,30 @@ def ban_user(banner, banned):
     :param banner: The nickname of the user initiating the ban
     :param banned: The nickname of the user to be banned
     """
-    banned_user = clients[nicknames.index(banned)]
-    banned_ip = banned_user.getsockname()[0]
-    with open("lists/bans.txt", "a") as bans_list:
-        bans_list.write(banned+","+banned_ip+"\n")
-        bans_list.close()
-    banned_ips[banned] = banned_ip
-    message = f"{banned} has been banned by {banner}"
-    print(message)
-    print(banned_ips)
-    broadcast(message)
-    close_connection(clients[nicknames.index(banned)])
+    try:
+        banned_user = clients[nicknames.index(banned)]
+        print(admins)
+        print(nicknames)
+        print(clients)
+        if banner != "SERVER" and banned_user in admins:
+            clients[nicknames.index(banner)].send("You can't kick/ban a fellow Admin!".encode("utf-8"))
+        else:
+            banned_ip = banned_user.getsockname()[0]
+            with open("lists/bans.txt", "a") as bans_list:
+                bans_list.write(banned+","+banned_ip+"\n")
+                bans_list.close()
+            banned_ips[banned] = banned_ip
+            message = f"{banned} has been banned by {banner}"
+            print(message)
+            print(banned_ips)
+            broadcast(message)
+            close_connection(clients[nicknames.index(banned)])
+    except ValueError:
+        message = f"{banned} isn't the nickname of an active user!"
+        if banner != "SERVER":
+            clients[nicknames.index(banner)].send(message.encode("utf-8"))
+        else:
+            print(message)
 
 def promote_user(nickname):
     """
@@ -235,18 +245,18 @@ def write():
         message = input("")
         try:
             if message.startswith("/"):
-                if message.split(" ")[0] == "/admin":
-                    nickname = message.split(" ")[1]
+                nickname = message.split(" ")[1]
+            if message.split(" ")[0] == "/admin":
                     promote_user(nickname)
-                elif message.split(" ")[0] == "/kick":
-                    nickname = message.split(" ")[1]
-                    kick_user("SERVER",nickname)
-                elif message.split(" ")[0] == "/ban":
-                    nickname = message.split(" ")[1]
-                    ban_user("SERVER",nickname)
-                else:
-                    print("Invalid command!")
-        except IndexError:
+            elif message.split(" ")[0] == "/kick":
+                kick_user("SERVER",nickname)
+            elif message.split(" ")[0] == "/ban":
+                ban_user("SERVER",nickname)
+            elif message.split(" ")[0] == "/list":
+                ban_user("SERVER",nickname)
+            else:
+                print("Invalid command!")
+        except IndexError or ValueError:
             print("Invalid arguments!")
 
 # Print server status and start the write thread

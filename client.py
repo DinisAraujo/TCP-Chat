@@ -3,7 +3,7 @@ import socket, threading
 # Prompt the user to input the server's IP address and their nickname
 HOST = input("Type server IP: ")
 nickname = input("Choose a nickname: ")
-PORT = 44332
+PORT = 44314
 
 # Variables to track admin status and nickname changes
 admin = False
@@ -75,6 +75,7 @@ def write():
                 send = False
                 print("You're not an Admin and can't use this command.")
 
+        # Process /ban command to ban a user (admin only)
         elif message.split(" ")[1] == "/ban":
             if not admin:
                 send = False
